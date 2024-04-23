@@ -125,7 +125,7 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
         }
 
         web::AsyncWebRequest()
-            .fetch(fmt::format("{}/api/v1/search/level/advanced/?query={}&limit={}&offset={}", _baseUrl, a, b, b * c))
+            .fetch(fmt::format("{}/api/v1/search/level/advanced/?query={}&limit={}&offset={}", _baseUrl, url_encode(a), b, b * c))
             .text()
             .then([this, onComplete](std::string const& catgirl) {
                 nlohmann::json data = nlohmann::json::parse(catgirl);

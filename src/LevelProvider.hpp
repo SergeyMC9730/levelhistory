@@ -19,6 +19,8 @@ protected:
     std::string _baseUrl;
 
     std::unordered_map<enum LPFeatures, std::variant<std::string, int>> _params;
+
+    std::string url_encode(const std::string value);
 public:
     struct BasicLevelInformation {
         int musicID = 0;
