@@ -566,7 +566,7 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
 
     d = levelArraySize .find_first_not_of("0123456789") == std::string::npos;
 
-    log::info("levelArraySize ={}",levelArraySize );
+    // log::info("levelArraySize ={}",levelArraySize );
 
     if (!d && !levelArraySize .empty()) {
         FLAlertLayer::create("Error", "<cr>Level array size should contain numbers only!</c>", "OK")->show();
@@ -611,14 +611,14 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
 
 LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
     auto csz = page->getContentSize();
-    log::info("1");
+    // log::info("1");
 
     LevelCell *cell = LevelCell::create(0.f, 0.f);
-    log::info("2");
+    // log::info("2");
     cell->loadFromLevel(level);
-    log::info("3");
+    // log::info("3");
     cell->setPosition(0, csz.height / 2);
-    log::info("4");
+    // log::info("4");
 
     CCLayer *base = dynamic_cast<CCLayer *>(cell->getChildByID("main-layer"));
     base->setAnchorPoint({0, 0});
@@ -665,7 +665,7 @@ void ProviderPopup::onLevelPage(CCObject *sender) {
 
     popup->_levelPage._currentLevelsIndex += button->getTag();
 
-    log::info("tag={}", button->getTag());
+    // log::info("tag={}", button->getTag());
 
     if (popup->_levelPage._currentLevelsIndex > (popup->_levelPage._currentLevels.size() - 1)) {
         popup->_levelPage._currentLevelsIndex = popup->_levelPage._currentLevels.size() - 1;
@@ -1167,7 +1167,7 @@ void ProviderPopup::onGenericSearch(CCObject *sender) {
 
     bool d = levelArraySize .find_first_not_of("0123456789") == std::string::npos;
 
-    log::info("levelArraySize ={}",levelArraySize );
+    // log::info("levelArraySize ={}",levelArraySize );
 
     if (!d && !levelArraySize .empty()) {
         FLAlertLayer::create("Error", "<cr>Level array size should contain numbers only!</c>", "OK")->show();

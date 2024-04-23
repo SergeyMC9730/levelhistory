@@ -287,7 +287,7 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
             }
 
             if (propLevel->m_demonVotes <= 0) {
-                log::info("votes: {}", propLevel->m_demonVotes);
+                // log::info("votes: {}", propLevel->m_demonVotes);
 
                 this->cleanupLevels(true);
                 this->_serverResponseParsed = old_vec;
@@ -324,13 +324,14 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
 
         std::ofstream gmdfile;
 
-        gmdfile.open ("temp.gmd");
+        std::string path = Mod::get()->getSaveDir().generic_string();
+        std::string _path = fmt::format("{}/temp.gmd", path);
+
+        gmdfile.open (_path);
         gmdfile << catgirl;
         gmdfile.close();
 
-        auto file = gmd::ImportGmdFile::from("temp.gmd");
-
-        // geode::Result<GJGameLevel*> intoLevel() const;
+        auto file = gmd::ImportGmdFile::from(_path);
 
         // std::filesystem::remove("temp.gmd");
         
@@ -339,7 +340,7 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
         auto result = file.intoLevel();
         
         if (result.isErr() || !result.isOk()) {
-            log::info("error: {}", result.unwrapErr());
+            log::info("(GDHistoryProvider) error: {}", result.unwrapErr());
 
             onComplete(this, "-2", info);
 

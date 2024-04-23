@@ -1,6 +1,9 @@
 {
 	"geode": "2.0.0-beta.22",
-	"gd": "2.204",
+	"gd": {
+        "android": "2.205",
+        "win": "2.204"
+    },
 	"version": "v1.0.0",
 	"id": "dogotrigger.level_history",
 	"name": "Level History",
