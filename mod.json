@@ -4,11 +4,11 @@
         "android": "2.205",
         "win": "2.204"
     },
-	"version": "v1.0.1",
+	"version": "v1.0.2",
 	"id": "dogotrigger.level_history",
 	"name": "Level History",
 	"developer": "dogotrigger",
-	"description": "Look through deleted and outdated levels using GDHistory or other sources!",
+	"description": "Look and play through deleted and outdated levels using GDHistory or other sources!",
 	"dependencies": [
 		{"id": "hjfod.gmd-api", "importance": "required", "version": "*"},
 		{"id": "geode.node-ids", "importance": "required", "version": "*"}

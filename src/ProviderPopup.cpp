@@ -458,6 +458,15 @@ void ProviderPopup::setupLevelIDPage(CCLayer *providerBox) {
     TextInput *in = TextInput::create(100, "Enter level ID...", "chatFont.fnt");
     in->setPosition(0, 0);
     in->setAnchorPoint({0.5f, 0.5f});
+    in->setCallback([this](const std::string &value) {
+        ProviderPopup::get()->_enterLevelID = value;
+    });
+
+    auto popup = ProviderPopup::get();
+
+    if (!popup->_enterLevelID.empty()) {
+        in->setString(popup->_enterLevelID);
+    }
 
     int sz = 0;
     auto prev_page = static_cast<CCMenuItemSpriteExtra *>(providerBox->getChildByIDRecursive("prev-page"));
@@ -524,8 +533,7 @@ void ProviderPopup::setupLevelIDPage(CCLayer *providerBox) {
     circle->m_pCircle->setOpacity(0);
 
     page->addChild(circle);
-    
-    auto popup = ProviderPopup::get();
+
     popup->_levelPage._cells.clear();
 }
 
@@ -713,6 +721,20 @@ void ProviderPopup::onLevelPage(CCObject *sender) {
     for (auto cell : popup->_levelPage._cells) {
         cell->setVisible(false);
     }
+
+    if (level->m_dislikes == 0) {
+        auto spr = dynamic_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
+        auto btn = dynamic_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
+
+        btn->setEnabled(false);
+        spr->setColor({64, 64, 64});
+    } else {
+        auto spr = dynamic_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
+        auto btn = dynamic_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
+
+        btn->setEnabled(true);
+        spr->setColor({255, 255, 255});
+    }
     
     // int id = level->m_levelID.value();
     // if (id == 0) {
@@ -723,6 +745,8 @@ void ProviderPopup::onLevelPage(CCObject *sender) {
     // CCNode *_cell = popup->_levelPage.page->getChildByID(cellname);
 
     popup->_levelPage._cells[popup->_levelPage._currentLevelsIndex]->setVisible(true);
+
+    ProviderPopup::removeThumbnailForCell(popup->_levelPage._cells[popup->_levelPage._currentLevelsIndex]);
 }
 
 void ProviderPopup::lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer *existingCircle, ProviderPopup *popup, LevelProvider *prov, GJGameLevel *level) {
@@ -825,7 +849,8 @@ void ProviderPopup::lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer
 
         si->_page->addChild(menu);
 
-    applyBottomButtons(si->_page);
+    popup->applyBottomButtons(si->_page);
+    popup->removeLevelRatings();
 }
 
 void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
@@ -907,6 +932,15 @@ void ProviderPopup::setupGenericSearchPage(CCLayer *providerBox) {
     TextInput *in = TextInput::create(150, "Enter level ID/level name/etc...", "chatFont.fnt");
     in->setPosition(0, 0);
     in->setAnchorPoint({0.5f, 0.5f});
+    in->setCallback([this](const std::string &value) {
+        ProviderPopup::get()->_enterQuery = value;
+    });
+
+    auto popup = ProviderPopup::get();
+
+    if (!popup->_enterLevelID.empty()) {
+        in->setString(popup->_enterQuery);
+    }
 
     int sz = 0;
     auto prev_page = static_cast<CCMenuItemSpriteExtra *>(providerBox->getChildByIDRecursive("prev-page"));
@@ -974,7 +1008,6 @@ void ProviderPopup::setupGenericSearchPage(CCLayer *providerBox) {
 
     page->addChild(circle);
     
-    auto popup = ProviderPopup::get();
     popup->_levelPage._cells.clear();
 }
 
@@ -1085,6 +1118,7 @@ void ProviderPopup::lambdaOnDownloadLevelList(SearchInstance *si, LoadingCircleL
         }
 
         popup->_levelPage._cells[0]->setVisible(true);
+        popup->removeThumbnailForCell(popup->_levelPage._cells[0]);
 
         popup->_levelPage._currentLevels = more;
         popup->_levelPage._currentLevelsIndex = 0;
@@ -1297,25 +1331,32 @@ void ProviderPopup::applyBottomButtons(CCLayer *page) {
     RowLayout *rLayout = RowLayout::create();
     levelActionsMenu->setLayout(rLayout);
 
-    {
-        auto spr4 = ButtonSprite::create("Copy ID");
-        spr4->setScale(0.6f);
-            
-        auto btn4 = CCMenuItemSpriteExtra::create(
-            spr4, this, menu_selector(ProviderPopup::onCopyID)
-        );
+    auto app = CCApplication::sharedApplication();
+    auto platform = app->getTargetPlatform();
 
-        levelActionsMenu->addChild(btn4);
-        levelActionsMenu->updateLayout();
+    if (platform != TargetPlatform::kTargetAndroid) {
+        {
+            auto spr4 = ButtonSprite::create("Copy ID");
+            spr4->setScale(0.6f);
+                
+            auto btn4 = CCMenuItemSpriteExtra::create(
+                spr4, this, menu_selector(ProviderPopup::onCopyID)
+            );
+
+            levelActionsMenu->addChild(btn4);
+            levelActionsMenu->updateLayout();
+        }
     }
 
     {
         auto spr4 = ButtonSprite::create("Play Level");
         spr4->setScale(0.6f);
+        spr4->setID("play-level-spr");
             
         auto btn4 = CCMenuItemSpriteExtra::create(
             spr4, this, menu_selector(ProviderPopup::onPlayLevelDownload)
         );
+        btn4->setID("play-level-btn");
 
         levelActionsMenu->addChild(btn4);
         levelActionsMenu->updateLayout();
@@ -1334,4 +1375,48 @@ void ProviderPopup::applyBottomButtons(CCLayer *page) {
     levelActionsMenu->setPosition(csz1.width / 2, csz2.height);
 
     page->addChild(levelActionsMenu);
+}
+
+void ProviderPopup::removeLevelRatings() {
+    for (auto cell : _levelPage._cells) {
+        CCObject *obj1 = cell->getChildByIDRecursive("Level-Ratings/ratings-label");
+        CCObject *obj2 = cell->getChildByIDRecursive("Level-Ratings/ratings-icon");
+
+        if (obj1 != nullptr) {
+            CCNode *as_node = dynamic_cast<CCNode *>(obj1);
+            if (as_node != nullptr) {
+                as_node->removeMeAndCleanup();
+            }
+        }
+        if (obj2 != nullptr) {
+            CCNode *as_node = dynamic_cast<CCNode *>(obj2);
+            if (as_node != nullptr) {
+                as_node->removeMeAndCleanup();
+            }
+        }
+    }
+}
+
+void ProviderPopup::removeThumbnailForCell(LevelCell *cell) {
+    CCArray *children = cell->getChildren();
+
+    for (int i = 0; i < children->count(); i++) {
+        CCObject *obj = children->objectAtIndex(i);
+
+        auto as_spr = dynamic_cast<CCSprite *>(obj);
+        if (as_spr != nullptr) {
+            as_spr->setPosition({1000.f, 1000.f});
+
+            continue;
+        }
+
+        auto as_clip = dynamic_cast<CCClippingNode *>(obj);
+        if (as_clip != nullptr) {
+            as_clip->setPosition({1000.f, 1000.f});
+                
+            continue;
+        }
+    }
+
+    // children->release();
 }

@@ -30,19 +30,21 @@ class $modify(LHLevelSearchLayer, LevelSearchLayer) {
 
 		auto menu = (CCMenu *)this->getChildByID("other-filter-menu");
 
-		extrasearch->setID("provider-button"_spr);
+		// extrasearch->setID("provider-button"_spr);
 
-		auto children = menu->getChildren();
+		// auto children = menu->getChildren();
 
-		auto last_child = (CCNode *)children->lastObject();
-		auto pos = last_child->getPosition();
-		auto csz = last_child->getContentSize();
+		// auto last_child = (CCNode *)children->lastObject();
+		// auto pos = last_child->getPosition();
+		// auto csz = last_child->getContentSize();
 
-		pos.y -= csz.width + 10.f;
+		// pos.y -= csz.width + 10.f;
 
-		extrasearch->setPosition(pos);
+		// extrasearch->setPosition(pos);
 
 		menu->addChild(extrasearch);
+
+		menu->updateLayout();
 
 		return true;
 	}

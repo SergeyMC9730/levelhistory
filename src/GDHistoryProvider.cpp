@@ -57,8 +57,8 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                     PARSE_STRING(level->m_sfxIDs, data["sfx_ids"]);
                     PARSE_INT(level->m_audioTrack, leveljson["official_song"]);
                     PARSE_INT(level->m_gameVersion, leveljson["game_version"]);
-                    PARSE_INT(level->m_ratings, leveljson["raiting"]);
-                    PARSE_INT(level->m_ratingsSum, leveljson["raiting_sum"]);
+                    PARSE_INT(level->m_ratings, leveljson["rating"]);
+                    PARSE_INT(level->m_ratingsSum, leveljson["rating_sum"]);
                     PARSE_INT(level->m_downloads, leveljson["downloads"]);
                     PARSE_INT(level->m_likes, leveljson["likes"]);
                     PARSE_INT(level->m_levelLength, leveljson["length"]);
@@ -73,14 +73,21 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                     PARSE_BOOL(level->m_isEditable, leveljson["level_string_available"]);
                     PARSE_INT(level->m_demonDifficulty, leveljson["demon_type"]);
                     PARSE_INT(level->m_demonVotes, leveljson["id"]);
-                    if (!leveljson["feature_score"].is_null() && leveljson["feature_score"].get<int>() > 0) {
-                        level->m_featured = 1;
-                        PARSE_INT(level->m_rateFeature, leveljson["feature_score"]);
-                    }
+                    PARSE_INT(level->m_featured, leveljson["feature_score"]);
+    
                     if (!leveljson["song"].is_null()) {
                         PARSE_INT(level->m_songID, leveljson["song"]["online_id"]);
                     }
                     PARSE_INT(level->m_isEpic, leveljson["epic"]);
+
+                    bool has_leveldata = false;
+                    PARSE_BOOL(has_leveldata, leveljson["level_string_available"]);
+                    if (has_leveldata) {
+                        level->m_dislikes = 1;
+                        level->m_likes++;
+                    } else {
+                        level->m_dislikes = 0;
+                    }
 
                     level->retain();
                     
@@ -174,11 +181,17 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                     PARSE_INT(level->m_rateStars, leveljson["cache_stars"]);
                     PARSE_INT(level->m_levelID, leveljson["online_id"]);
                     PARSE_INT(level->m_demonVotes, leveljson["id"]);
-                    if (!leveljson["cache_featured"].is_null() && leveljson["cache_featured"].get<int>() > 0) {
-                        level->m_featured = 1;
-                        PARSE_INT(level->m_rateFeature, leveljson["cache_featured"]);
-                    }
+                    PARSE_INT(level->m_featured, leveljson["cache_featured"]);
                     PARSE_INT(level->m_isEpic, leveljson["cache_epic"]);
+
+                    bool has_leveldata = false;
+                    PARSE_BOOL(has_leveldata, leveljson["cache_level_string_available"]);
+                    if (has_leveldata) {
+                        level->m_dislikes = 1;
+                        level->m_likes++;
+                    } else {
+                        level->m_dislikes = 0;
+                    }
 
                     level->retain();
                     
@@ -321,6 +334,11 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
 
             return;
         }
+        if (catgirl.find("You do not have the rights to download this record") != std::string::npos) {
+            onComplete(this, "-6", info);
+            
+            return;
+        }
 
         std::ofstream gmdfile;
 
@@ -341,7 +359,8 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
         
         if (result.isErr() || !result.isOk()) {
             log::info("(GDHistoryProvider) error: {}", result.unwrapErr());
-
+            log::info("(GDHistoryProvider) level string: {}", catgirl);
+    
             onComplete(this, "-2", info);
 
             return;
@@ -380,7 +399,8 @@ std::string GDHistoryProvider::getErrorCodeDescription(std::string err) {
         {"-2", "gmd api error. (dumped into console)"},
         {"-3", "invalid record id."},
         {"-4", "level not found."},
-        {"-5", "level data cannot be downloaded for this level. Note that this issue will be fixed if level would have downloadable link for it in the future."}
+        {"-5", "level data cannot be downloaded for this level. Note that this issue will be fixed if level would have downloadable link for it in the future."},
+        {"-6", "insufficient rights to download this level."}
     };
 
     if (errors.count(err)) {

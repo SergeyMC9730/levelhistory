@@ -7,6 +7,7 @@
 class LevelProvider;
 class SearchInstance;
 class LoadingCircleLayer;
+class LevelCell;
 
 class ProviderPopupInfo {
 public:
@@ -49,6 +50,9 @@ public:
     std::string _levelArraySize = "";
     std::string _levelPageStr = "";
 
+    std::string _enterLevelID = "";
+    std::string _enterQuery = "";
+
     LevelCell *createLevelCell(GJGameLevel *level, CCLayer *page);
 
     void lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer *existingCircle, ProviderPopup *popup, LevelProvider *prov, GJGameLevel *level);
@@ -79,5 +83,9 @@ public:
     void onPlayLevelDownload(CCObject *sender);
 
     void applyBottomButtons(CCLayer *page);
+    
+    static void removeThumbnailForCell(LevelCell *cell);
+    void removeLevelRatings();
+    // static void setButtonSpriteColor(ButtonSprite)
     // bool ccTouchBegan(cocos2d::CCTouch *touch, cocos2d::CCEvent *event) override;
 };
