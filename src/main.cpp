@@ -30,21 +30,27 @@ class $modify(LHLevelSearchLayer, LevelSearchLayer) {
 
 		auto menu = (CCMenu *)this->getChildByID("other-filter-menu");
 
-		// extrasearch->setID("provider-button"_spr);
+		auto app = CCApplication::sharedApplication();
+		auto platform = app->getTargetPlatform();
 
-		// auto children = menu->getChildren();
+		if (platform != TargetPlatform::kTargetAndroid) {
+			menu->addChild(extrasearch);
+			menu->updateLayout();
+		} else {
+			extrasearch->setID("provider-button"_spr);
 
-		// auto last_child = (CCNode *)children->lastObject();
-		// auto pos = last_child->getPosition();
-		// auto csz = last_child->getContentSize();
+			auto children = menu->getChildren();
 
-		// pos.y -= csz.width + 10.f;
+			auto last_child = (CCNode *)children->lastObject();
+			auto pos = last_child->getPosition();
+			auto csz = last_child->getContentSize();
 
-		// extrasearch->setPosition(pos);
+			pos.y -= csz.width + 10.f;
 
-		menu->addChild(extrasearch);
+			extrasearch->setPosition(pos);
 
-		menu->updateLayout();
+			menu->addChild(extrasearch);
+		}
 
 		return true;
 	}
