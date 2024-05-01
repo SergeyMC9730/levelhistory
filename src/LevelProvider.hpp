@@ -21,6 +21,10 @@ protected:
     std::unordered_map<enum LPFeatures, std::variant<std::string, int>> _params;
 
     std::string url_encode(const std::string value);
+
+    std::string _currentError;
+
+    void makeLevelCopyable(GJGameLevel *level);
 public:
     struct BasicLevelInformation {
         int musicID = 0;
@@ -44,4 +48,5 @@ public:
     virtual void getLevelData(int id, std::function<void(LevelProvider *, std::string, struct BasicLevelInformation)> onComplete) = 0;
 
     virtual std::string getErrorCodeDescription(std::string err) = 0;
+    virtual std::string getErrorCode();
 };

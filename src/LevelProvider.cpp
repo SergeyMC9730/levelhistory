@@ -39,3 +39,14 @@ std::string LevelProvider::url_encode(const std::string value) {
 
     return escaped.str();
 }
+
+std::string LevelProvider::getErrorCode() {
+    return _currentError;
+}
+
+#include <Geode/binding/GJGameLevel.hpp>
+
+void LevelProvider::makeLevelCopyable(GJGameLevel *level) {
+    level->m_isEditable = true;
+    level->m_password = 1;
+}

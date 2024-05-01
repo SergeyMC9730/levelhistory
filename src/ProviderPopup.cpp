@@ -8,6 +8,8 @@ using namespace geode::prelude;
 
 #include "LevelProvider.hpp"
 
+// #include <geode/binding/LevelInfoLayer.hpp>
+
 void ProviderPopup::onToggler1PressMaybe(CCObject *sender) {
     LevelProvider *provider = static_cast<LevelProvider *>(((CCNode *)sender)->getUserData());
 
@@ -168,6 +170,10 @@ void ProviderPopup::update(float delta) {
     //     _levelPageStr = lpi->getString();
     //     log::info("lps: {}", _levelPageStr);
     // }
+
+    for (auto cell : _levelPage._cells) {
+        removeThumbnailForCell(cell);
+    }
 }
 
 ProviderPopup* ProviderPopup::create(std::vector<std::shared_ptr<LevelProvider>> providers) { 
@@ -630,7 +636,7 @@ LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
 
     CCLayer *base = dynamic_cast<CCLayer *>(cell->getChildByID("main-layer"));
     base->setAnchorPoint({0, 0});
-    base->setPositionX(csz.width / 3);
+    base->setPositionX(csz.width / 4);
     base->setScale(0.65f);
 
     std::vector<CCNode *> to_lower;
@@ -658,6 +664,9 @@ LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
     dateLabel->setPosition(csz.width / 2, -37);
 
     cell->addChild(dateLabel);
+
+    CCMenuItemSpriteExtra *viewBtn = dynamic_cast<CCMenuItemSpriteExtra *>(cell->getChildByIDRecursive("view-button"));
+    viewBtn->setVisible(false);
 
     return cell;
 }
@@ -775,7 +784,8 @@ void ProviderPopup::lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer
         existingCircle->m_pCircle->setOpacity(0);
     
         if (level == nullptr) {
-            FLAlertLayer::create("Error", "<cr>No such level!</c>", "OK")->show();
+            auto error = fmt::format("<cr>No levels cannot be found: </c><cy>{}</c>", prov->getErrorCodeDescription(prov->getErrorCode()));
+            FLAlertLayer::create("Error", error, "OK")->show();
             return;
         }
 
@@ -1091,7 +1101,9 @@ void ProviderPopup::lambdaOnDownloadLevelList(SearchInstance *si, LoadingCircleL
         existingCircle->m_pCircle->setOpacity(0);
     
         if (level == nullptr) {
-            FLAlertLayer::create("Error", "<cr>No levels were found!</c>", "OK")->show();
+            auto error = fmt::format("<cr>No levels cannot be found: </c><cy>{}</c>", prov->getErrorCodeDescription(prov->getErrorCode()));
+
+            FLAlertLayer::create("Error", error, "OK")->show();
             return;
         }
 
@@ -1306,7 +1318,20 @@ void ProviderPopup::onPlayLevelDownload(CCObject *sender) {
         }
 
         if (data[0] == '-') {
-            FLAlertLayer::create("Error", fmt::format("<cr>Error while getting level data: </c><cy>{}</c>", prov->getErrorCodeDescription(data)), "OK")->show();
+            float transition_time = 0.5f;
+
+            auto clevel = newpopup->_levelPage._currentLevels[newpopup->_levelPage._currentLevelsIndex];
+            auto scene = LevelInfoLayer::scene(clevel, false);
+            auto transition = CCTransitionFade::create(transition_time, scene);
+
+            CCDirector::sharedDirector()->pushScene(transition);
+
+            std::string err = fmt::format("<cr>Error while getting level data: </c><cy>{}</c>", prov->getErrorCodeDescription(data));
+            ProviderPopup::_currentError = err;
+
+            scene->scheduleUpdate();
+            scene->scheduleOnce(schedule_selector(ProviderPopup::scenePrintError), transition_time + 0.1f);
+
             return;
         }
 
@@ -1318,7 +1343,7 @@ void ProviderPopup::onPlayLevelDownload(CCObject *sender) {
 
         // log::info("level string: {}", data);
 
-        auto scene = PlayLayer::scene(level, false, false);
+        auto scene = LevelInfoLayer::scene(level, false);
 
         auto transition = CCTransitionFade::create(0.5f, scene);
 
@@ -1349,7 +1374,7 @@ void ProviderPopup::applyBottomButtons(CCLayer *page) {
     }
 
     {
-        auto spr4 = ButtonSprite::create("Play Level");
+        auto spr4 = ButtonSprite::create("Go to Level");
         spr4->setScale(0.6f);
         spr4->setID("play-level-spr");
             
@@ -1420,3 +1445,9 @@ void ProviderPopup::removeThumbnailForCell(LevelCell *cell) {
 
     // children->release();
 }
+
+void ProviderPopup::scenePrintError(float delta) {
+    FLAlertLayer::create("Error", ProviderPopup::_currentError, "OK")->show();
+}
+
+std::string ProviderPopup::_currentError = "";

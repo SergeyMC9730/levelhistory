@@ -18,9 +18,17 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
             .fetch(fmt::format("{}/api/v1/level/{}", _baseUrl, std::get<int>(_params[LPFeatures::QueryID])))
             .text()
             .then([this, onComplete](std::string const& catgirl) {
+                if (catgirl.find("Server Error") != std::string::npos) {
+                    this->_currentError = "-7";
+                    onComplete(this, nullptr);
+
+                    return;
+                }
+
                 nlohmann::json data = nlohmann::json::parse(catgirl);
 
                 if (!data.contains("records")) {
+                    this->_currentError = "-8";
                     onComplete(this, nullptr);
 
                     return;
@@ -28,6 +36,7 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
 
                 nlohmann::json records = data.at("records");
                 if (!records.is_array()) {
+                    this->_currentError = "-9";
                     onComplete(this, nullptr);
 
                     return;
@@ -36,6 +45,7 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                 int levels = records.size();
 
                 if (levels == 0) {
+                    this->_currentError = "-10";
                     onComplete(this, nullptr);
 
                     return;
@@ -89,6 +99,8 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                         level->m_dislikes = 0;
                     }
 
+                    this->makeLevelCopyable(level);
+
                     level->retain();
                     
                     this->_serverResponseParsed.push_back(level);
@@ -111,6 +123,14 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                 onComplete(this, this->_serverResponseParsed.at(0));
             })
             .expect([this, onComplete](std::string const& error) {
+                if (error.find("Server Error") != std::string::npos) {
+                    this->_currentError = "-7";
+                    onComplete(this, nullptr);
+
+                    return;
+                }
+
+                this->_currentError = "-1";
                 onComplete(this, nullptr);
             });
     }
@@ -137,7 +157,15 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
             .then([this, onComplete](std::string const& catgirl) {
                 nlohmann::json data = nlohmann::json::parse(catgirl);
 
+                if (catgirl.find("Server Error") != std::string::npos) {
+                    this->_currentError = "-7";
+                    onComplete(this, nullptr);
+
+                    return;
+                }
+
                 if (!data.contains("hits")) {
+                    this->_currentError = "-8";
                     onComplete(this, nullptr);
 
                     return;
@@ -145,6 +173,7 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
 
                 nlohmann::json records = data.at("hits");
                 if (!records.is_array()) {
+                    this->_currentError = "-9";
                     onComplete(this, nullptr);
 
                     return;
@@ -153,6 +182,7 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                 int levels = records.size();
 
                 if (levels == 0) {
+                    this->_currentError = "-10";
                     onComplete(this, nullptr);
 
                     return;
@@ -187,11 +217,15 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                     bool has_leveldata = false;
                     PARSE_BOOL(has_leveldata, leveljson["cache_level_string_available"]);
                     if (has_leveldata) {
+                        log::info("(GDHistoryProvider) level {} by {} has leveldata", level->m_levelName, level->m_creatorName);
                         level->m_dislikes = 1;
                         level->m_likes++;
                     } else {
+                        log::info("(GDHistoryProvider) level {} by {} does not has leveldata", level->m_levelName, level->m_creatorName);
                         level->m_dislikes = 0;
                     }
+
+                    this->makeLevelCopyable(level);
 
                     level->retain();
                     
@@ -201,6 +235,14 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
                 onComplete(this, this->_serverResponseParsed.at(0));
             })
             .expect([this, onComplete](std::string const& error) {
+                if (error.find("Server Error") != std::string::npos) {
+                    this->_currentError = "-7";
+                    onComplete(this, nullptr);
+
+                    return;
+                }
+
+                this->_currentError = "-1";
                 onComplete(this, nullptr);
             });
     }
@@ -274,7 +316,8 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
                 this->cleanupLevels(true);
                 this->_serverResponseParsed = old_vec;
 
-                onComplete(this, "-4", info);
+                // this->_currentError = "-4";
+                onComplete(this, this->getErrorCode(), info);
 
                 return;
             }
@@ -294,6 +337,7 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
                 this->cleanupLevels(true);
                 this->_serverResponseParsed = old_vec;
 
+                this->_currentError = "-5";
                 onComplete(this, "-5", info);
 
                 return;
@@ -305,6 +349,7 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
                 this->cleanupLevels(true);
                 this->_serverResponseParsed = old_vec;
 
+                this->_currentError = "-3";
                 onComplete(this, "-3", info);
 
                 return;
@@ -329,12 +374,21 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
     .then([this, onComplete](std::string const& catgirl) {
         struct LevelProvider::BasicLevelInformation info;
 
+        if (catgirl.find("Server Error") != std::string::npos) {
+            this->_currentError = "-7";
+            onComplete(this, "-7", info);
+
+            return;
+        }
+
         if (catgirl.find("This record does not contain any level data.") != std::string::npos) {
+            this->_currentError = "-5";
             onComplete(this, "-5", info);
 
             return;
         }
         if (catgirl.find("You do not have the rights to download this record") != std::string::npos) {
+            this->_currentError = "-6";
             onComplete(this, "-6", info);
             
             return;
@@ -400,7 +454,11 @@ std::string GDHistoryProvider::getErrorCodeDescription(std::string err) {
         {"-3", "invalid record id."},
         {"-4", "level not found."},
         {"-5", "level data cannot be downloaded for this level. Note that this issue will be fixed if level would have downloadable link for it in the future."},
-        {"-6", "insufficient rights to download this level."}
+        {"-6", "insufficient rights to download this level."},
+        {"-7", "gd history's api is down."},
+        {"-8", "api did not return record data."},
+        {"-9", "api returned record data with invalid data type."},
+        {"-10", "api returned record array with zero levels in it."}
     };
 
     if (errors.count(err)) {

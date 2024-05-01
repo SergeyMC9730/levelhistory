@@ -53,6 +53,8 @@ public:
     std::string _enterLevelID = "";
     std::string _enterQuery = "";
 
+    static std::string _currentError;
+
     LevelCell *createLevelCell(GJGameLevel *level, CCLayer *page);
 
     void lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer *existingCircle, ProviderPopup *popup, LevelProvider *prov, GJGameLevel *level);
@@ -86,6 +88,8 @@ public:
     
     static void removeThumbnailForCell(LevelCell *cell);
     void removeLevelRatings();
+
+    void scenePrintError(float delta);
     // static void setButtonSpriteColor(ButtonSprite)
     // bool ccTouchBegan(cocos2d::CCTouch *touch, cocos2d::CCEvent *event) override;
 };
