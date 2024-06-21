@@ -50,3 +50,7 @@ void LevelProvider::makeLevelCopyable(GJGameLevel *level) {
     level->m_isEditable = true;
     level->m_password = 1;
 }
+
+std::string LevelProvider::getDescription() {
+    return "(No description provided)";
+}

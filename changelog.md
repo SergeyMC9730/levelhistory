@@ -1,3 +1,9 @@
+# v1.0.4
+## GDHistory Provider
+- Networking has been redone
+## Technical Changes
+- Geode version has been switched to `3.0.0-beta.1`
+
 # v1.0.3
 ## GDHistory Provider
 - Now levels can be copied

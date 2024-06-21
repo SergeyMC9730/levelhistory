@@ -161,12 +161,12 @@ void ProviderPopup::update(float delta) {
     // auto lpiNd = getChildByIDRecursive("level-page-input");
 
     // if (laiNd) {
-    //     auto lai = dynamic_cast<TextInput *>(laiNd);
+    //     auto lai = typeinfo_cast<TextInput *>(laiNd);
     //     _levelArraySize = lai->getString();
     //     log::info("las: {}", _levelArraySize);
     // }
     // if (lpiNd) {
-    //     auto lpi = dynamic_cast<TextInput *>(lpiNd);
+    //     auto lpi = typeinfo_cast<TextInput *>(lpiNd);
     //     _levelPageStr = lpi->getString();
     //     log::info("lps: {}", _levelPageStr);
     // }
@@ -308,11 +308,11 @@ void ProviderPopup::setupProviderBoxOnPage(CCLayer *providerBox) {
     if ((info->_page > (info->_pagesMax - 1))) return;
 
     if (info->_pagesMax > 1) {     
-        auto prev_page = dynamic_cast<CCMenuItemSpriteExtra *>(providerBox->getChildByIDRecursive("prev-page"));
-        auto next_page = dynamic_cast<CCMenuItemSpriteExtra *>(providerBox->getChildByIDRecursive("next-page"));
+        auto prev_page = typeinfo_cast<CCMenuItemSpriteExtra *>(providerBox->getChildByIDRecursive("prev-page"));
+        auto next_page = typeinfo_cast<CCMenuItemSpriteExtra *>(providerBox->getChildByIDRecursive("next-page"));
 
-        auto prev_page_spr = dynamic_cast<CCSprite *>(providerBox->getChildByIDRecursive("prev-page-spr"));
-        auto next_page_spr = dynamic_cast<CCSprite *>(providerBox->getChildByIDRecursive("next-page-spr"));
+        auto prev_page_spr = typeinfo_cast<CCSprite *>(providerBox->getChildByIDRecursive("prev-page-spr"));
+        auto next_page_spr = typeinfo_cast<CCSprite *>(providerBox->getChildByIDRecursive("next-page-spr"));
 
         if (info->_page == 0) {
             prev_page->setEnabled(false);
@@ -336,13 +336,13 @@ void ProviderPopup::setupProviderBoxOnPage(CCLayer *providerBox) {
             prev_page_spr->setColor({255, 255, 255});
         }
         
-        CCLabelBMFont *l = dynamic_cast<CCLabelBMFont *>(providerBox->getChildByID("page-string"));
+        CCLabelBMFont *l = typeinfo_cast<CCLabelBMFont *>(providerBox->getChildByID("page-string"));
         if (l) {
             l->setString(fmt::format("Page {}", info->_page + 1).c_str());
         }
     }
 
-    CCLayer *page = dynamic_cast<CCLayer *>(providerBox->getChildByID("page"));
+    CCLayer *page = typeinfo_cast<CCLayer *>(providerBox->getChildByID("page"));
 
     if (!page) return;
 
@@ -406,7 +406,7 @@ void ProviderPopup::setupProviderBoxOnPage(CCLayer *providerBox) {
 
 void ProviderPopup::onPrevPage(CCObject *sender) {
     CCNode *orig = static_cast<CCNode *>(sender);
-    CCLayer *box = dynamic_cast<CCLayer *>(orig->getParent()->getParent());
+    CCLayer *box = typeinfo_cast<CCLayer *>(orig->getParent()->getParent());
     auto popup = ProviderPopup::get();
 
     if (!box) return;
@@ -428,7 +428,7 @@ void ProviderPopup::onPrevPage(CCObject *sender) {
 }
 void ProviderPopup::onNextPage(CCObject *sender) {
     CCNode *orig = static_cast<CCNode *>(sender);
-    CCLayer *box = dynamic_cast<CCLayer *>(orig->getParent()->getParent());
+    CCLayer *box = typeinfo_cast<CCLayer *>(orig->getParent()->getParent());
     auto popup = ProviderPopup::get();
 
     if (!box) return;
@@ -458,7 +458,7 @@ public:
 #include "LoadingCircleLayer.hpp"
 
 void ProviderPopup::setupLevelIDPage(CCLayer *providerBox) {
-    CCLayer *page = dynamic_cast<CCLayer *>(providerBox->getChildByID("page"));
+    CCLayer *page = typeinfo_cast<CCLayer *>(providerBox->getChildByID("page"));
     ProviderPopupInfo *info = (ProviderPopupInfo *)providerBox->getUserData();
     
     TextInput *in = TextInput::create(100, "Enter level ID...", "chatFont.fnt");
@@ -555,7 +555,7 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
         return;
     }
 
-    LoadingCircleLayer *existingCircle = dynamic_cast<LoadingCircleLayer *>(existingCirclePtr);
+    LoadingCircleLayer *existingCircle = typeinfo_cast<LoadingCircleLayer *>(existingCirclePtr);
 
     if (existingCircle->m_pCircle->getOpacity() > 0) {
         return;
@@ -625,35 +625,52 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
 
 LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
     auto csz = page->getContentSize();
-    // log::info("1");
+    log::info("1");
 
-    LevelCell *cell = LevelCell::create(0.f, 0.f);
+    // LevelCell *cell = LevelCell::create(0.f, 0.f);
     // log::info("2");
-    cell->loadFromLevel(level);
+    // cell->loadFromLevel(level);
     // log::info("3");
-    cell->setPosition(0, csz.height / 2);
+    // cell->setPosition(0, csz.height / 2);
     // log::info("4");
+    LevelCell *cell = new LevelCell("a", 0.f, 0.f);
+    log::info("2");
+    if (!cell->init()) return nullptr;
+    log::info("3");
+    cell->autorelease();
+    log::info("4");
+    cell->loadFromLevel(level);
+    log::info("5");
+    cell->setPosition(0, csz.height / 2);
 
-    CCLayer *base = dynamic_cast<CCLayer *>(cell->getChildByID("main-layer"));
+    CCLayer *base = typeinfo_cast<CCLayer *>(cell->getChildByID("main-layer"));
     base->setAnchorPoint({0, 0});
     base->setPositionX(csz.width / 4);
     base->setScale(0.65f);
 
     std::vector<CCNode *> to_lower;
+    
+    to_lower.push_back(cell->getChildByIDRecursive("length-label"));
+    to_lower.push_back(cell->getChildByIDRecursive("downloads-label"));
+    to_lower.push_back(cell->getChildByIDRecursive("likes-label"));
+    to_lower.push_back(cell->getChildByIDRecursive("length-icon"));
+    to_lower.push_back(cell->getChildByIDRecursive("downloads-icon"));
+    to_lower.push_back(cell->getChildByIDRecursive("likes-icon"));
 
-    to_lower.push_back(dynamic_cast<CCNode *>(cell->getChildByIDRecursive("length-label")));
-    to_lower.push_back(dynamic_cast<CCNode *>(cell->getChildByIDRecursive("downloads-label")));
-    to_lower.push_back(dynamic_cast<CCNode *>(cell->getChildByIDRecursive("likes-label")));
-    to_lower.push_back(dynamic_cast<CCNode *>(cell->getChildByIDRecursive("length-icon")));
-    to_lower.push_back(dynamic_cast<CCNode *>(cell->getChildByIDRecursive("downloads-icon")));
-    to_lower.push_back(dynamic_cast<CCNode *>(cell->getChildByIDRecursive("likes-icon")));
+    int idx = 0;
 
     for (auto node : to_lower) {
-        node->setPositionY(node->getPositionY() - 4);
+        if (node != nullptr) {
+            node->setPositionY(node->getPositionY() - 4);
+        } else {
+            log::info("node at {} is nullptr", idx);
+        }
     }
 
-    CCLabelBMFont *song_name = dynamic_cast<CCLabelBMFont *>(base->getChildByID("song-name"));
-    CCMenuItemSpriteExtra *creator_name = dynamic_cast<CCMenuItemSpriteExtra *>(base->getChildByIDRecursive("creator-name"));
+    idx++;
+
+    CCLabelBMFont *song_name = typeinfo_cast<CCLabelBMFont *>(base->getChildByID("song-name"));
+    CCMenuItemSpriteExtra *creator_name = typeinfo_cast<CCMenuItemSpriteExtra *>(base->getChildByIDRecursive("creator-name"));
     song_name->setPositionY(song_name->getPositionY() - 15);
     creator_name->setPositionY(creator_name->getPositionY() - 15);
 
@@ -665,20 +682,20 @@ LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
 
     cell->addChild(dateLabel);
 
-    CCMenuItemSpriteExtra *viewBtn = dynamic_cast<CCMenuItemSpriteExtra *>(cell->getChildByIDRecursive("view-button"));
+    CCMenuItemSpriteExtra *viewBtn = typeinfo_cast<CCMenuItemSpriteExtra *>(cell->getChildByIDRecursive("view-button"));
     viewBtn->setVisible(false);
 
     return cell;
 }
 
 void ProviderPopup::onLevelPage(CCObject *sender) {
-    auto button = dynamic_cast<CCMenuItemSpriteExtra *>(sender);
+    auto button = typeinfo_cast<CCMenuItemSpriteExtra *>(sender);
 
     if (!button) return;
 
     CCScene *currentScene = CCScene::get();
     auto popup_ = currentScene->getChildByID("provider-popup");
-    auto popup = dynamic_cast<ProviderPopup *>(popup_);
+    auto popup = typeinfo_cast<ProviderPopup *>(popup_);
 
     popup->_levelPage._currentLevelsIndex += button->getTag();
 
@@ -697,11 +714,11 @@ void ProviderPopup::onLevelPage(CCObject *sender) {
     //     return;
     // }
 
-    auto prev_page = dynamic_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("level-prev-page"));
-    auto next_page = dynamic_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("level-next-page"));
+    auto prev_page = typeinfo_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("level-prev-page"));
+    auto next_page = typeinfo_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("level-next-page"));
 
-    auto prev_page_spr = dynamic_cast<CCSprite *>(getChildByIDRecursive("level-prev-page-spr"));
-    auto next_page_spr = dynamic_cast<CCSprite *>(getChildByIDRecursive("level-next-page-spr"));
+    auto prev_page_spr = typeinfo_cast<CCSprite *>(getChildByIDRecursive("level-prev-page-spr"));
+    auto next_page_spr = typeinfo_cast<CCSprite *>(getChildByIDRecursive("level-next-page-spr"));
 
     if (popup->_levelPage._currentLevelsIndex == 0) {
         prev_page->setEnabled(false);
@@ -732,14 +749,14 @@ void ProviderPopup::onLevelPage(CCObject *sender) {
     }
 
     if (level->m_dislikes == 0) {
-        auto spr = dynamic_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
-        auto btn = dynamic_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
+        auto spr = typeinfo_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
+        auto btn = typeinfo_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
 
         btn->setEnabled(false);
         spr->setColor({64, 64, 64});
     } else {
-        auto spr = dynamic_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
-        auto btn = dynamic_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
+        auto spr = typeinfo_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
+        auto btn = typeinfo_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
 
         btn->setEnabled(true);
         spr->setColor({255, 255, 255});
@@ -864,7 +881,7 @@ void ProviderPopup::lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer
 }
 
 void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
-    CCLayer *page = dynamic_cast<CCLayer *>(providerBox->getChildByID("page"));
+    CCLayer *page = typeinfo_cast<CCLayer *>(providerBox->getChildByID("page"));
     ProviderPopupInfo *info = (ProviderPopupInfo *)providerBox->getUserData();
 
     auto *layout = RowLayout::create();
@@ -931,12 +948,12 @@ ProviderPopup *ProviderPopup::get() {
     CCScene *currentScene = CCScene::get();
     auto popup_ = currentScene->getChildByID("provider-popup");
     if (!popup_) return nullptr;
-    auto popup = dynamic_cast<ProviderPopup *>(popup_);
+    auto popup = typeinfo_cast<ProviderPopup *>(popup_);
     return popup;
 }
 
 void ProviderPopup::setupGenericSearchPage(CCLayer *providerBox) {
-    CCLayer *page = dynamic_cast<CCLayer *>(providerBox->getChildByID("page"));
+    CCLayer *page = typeinfo_cast<CCLayer *>(providerBox->getChildByID("page"));
     ProviderPopupInfo *info = (ProviderPopupInfo *)providerBox->getUserData();
     
     TextInput *in = TextInput::create(150, "Enter level ID/level name/etc...", "chatFont.fnt");
@@ -1193,7 +1210,7 @@ void ProviderPopup::onGenericSearch(CCObject *sender) {
         return;
     }
 
-    LoadingCircleLayer *existingCircle = dynamic_cast<LoadingCircleLayer *>(existingCirclePtr);
+    LoadingCircleLayer *existingCircle = typeinfo_cast<LoadingCircleLayer *>(existingCirclePtr);
 
     if (existingCircle->m_pCircle->getOpacity() > 0) {
         return;
@@ -1408,13 +1425,13 @@ void ProviderPopup::removeLevelRatings() {
         CCObject *obj2 = cell->getChildByIDRecursive("Level-Ratings/ratings-icon");
 
         if (obj1 != nullptr) {
-            CCNode *as_node = dynamic_cast<CCNode *>(obj1);
+            CCNode *as_node = typeinfo_cast<CCNode *>(obj1);
             if (as_node != nullptr) {
                 as_node->removeMeAndCleanup();
             }
         }
         if (obj2 != nullptr) {
-            CCNode *as_node = dynamic_cast<CCNode *>(obj2);
+            CCNode *as_node = typeinfo_cast<CCNode *>(obj2);
             if (as_node != nullptr) {
                 as_node->removeMeAndCleanup();
             }
@@ -1428,14 +1445,14 @@ void ProviderPopup::removeThumbnailForCell(LevelCell *cell) {
     for (int i = 0; i < children->count(); i++) {
         CCObject *obj = children->objectAtIndex(i);
 
-        auto as_spr = dynamic_cast<CCSprite *>(obj);
+        auto as_spr = typeinfo_cast<CCSprite *>(obj);
         if (as_spr != nullptr) {
             as_spr->setPosition({1000.f, 1000.f});
 
             continue;
         }
 
-        auto as_clip = dynamic_cast<CCClippingNode *>(obj);
+        auto as_clip = typeinfo_cast<CCClippingNode *>(obj);
         if (as_clip != nullptr) {
             as_clip->setPosition({1000.f, 1000.f});
                 

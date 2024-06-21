@@ -1,17 +1,17 @@
 {
-	"geode": "2.0.0-beta.22",
+	"geode": "3.0.0-beta.1",
 	"gd": {
-        "android": "2.205",
-        "win": "2.204"
+        "android": "2.206",
+        "win": "2.206"
     },
-	"version": "v1.0.3",
+	"version": "v1.0.4",
 	"id": "dogotrigger.level_history",
 	"name": "Level History",
 	"developer": "dogotrigger",
 	"description": "Look and play through deleted and outdated levels using GDHistory or other sources!",
 	"dependencies": [
-		{"id": "hjfod.gmd-api", "importance": "required", "version": "*"},
-		{"id": "geode.node-ids", "importance": "required", "version": "*"}
+		{"id": "hjfod.gmd-api", "importance": "required", "version": ">=1.2.0"},
+		{"id": "geode.node-ids", "importance": "required", "version": ">=1.12.0"}
 	],
 	"repository": "https://github.com/SergeyMC9730/levelhistory",
 	"issues": {

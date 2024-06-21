@@ -22,4 +22,6 @@ public:
     void getLevelData(int id, std::function<void(LevelProvider *, std::string, struct BasicLevelInformation)> onComplete) override;
 
     virtual std::string getErrorCodeDescription(std::string err) override;
+
+    std::string getDescription() override;
 };

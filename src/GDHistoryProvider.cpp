@@ -2,6 +2,7 @@
 #include <Geode/utils/web.hpp>
 #include <nlohmann/json.hpp>
 #include <hjfod.gmd-api/include/GMD.hpp>
+#include "GeodeNetwork.hpp"
 
 using namespace geode::prelude;
 
@@ -13,129 +14,152 @@ std::string GDHistoryProvider::getName() {
 void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGameLevel *)> onComplete) {
     cleanupLevels(false);
 
+    GeodeNetwork *network = new GeodeNetwork();
+
     if (_params.count(LPFeatures::QueryID)) {
-        web::AsyncWebRequest()
-            .fetch(fmt::format("{}/api/v1/level/{}", _baseUrl, std::get<int>(_params[LPFeatures::QueryID])))
-            .text()
-            .then([this, onComplete](std::string const& catgirl) {
-                if (catgirl.find("Server Error") != std::string::npos) {
-                    this->_currentError = "-7";
-                    onComplete(this, nullptr);
+        network->setURL(fmt::format("{}/api/v1/level/{}", _baseUrl, std::get<int>(_params[LPFeatures::QueryID])));
+        network->setErrorCallback([this, network, onComplete](GeodeNetwork *) {
+            std::string catgirl = network->getResponse();
 
-                    return;
-                }
+            if (catgirl.find("Server Error") != std::string::npos) {
+                this->_currentError = "-7";
+                onComplete(this, nullptr);
 
-                nlohmann::json data = nlohmann::json::parse(catgirl);
+                delete network;
 
-                if (!data.contains("records")) {
-                    this->_currentError = "-8";
-                    onComplete(this, nullptr);
+                return;
+            }
 
-                    return;
-                }
+            this->_currentError = "-1";
+            onComplete(this, nullptr);
 
-                nlohmann::json records = data.at("records");
-                if (!records.is_array()) {
-                    this->_currentError = "-9";
-                    onComplete(this, nullptr);
+            delete network;
 
-                    return;
-                }
+            return;
+        });
 
-                int levels = records.size();
+        network->setOkCallback([this, network, onComplete](GeodeNetwork *) {
+            std::string catgirl = network->getResponse();
 
-                if (levels == 0) {
-                    this->_currentError = "-10";
-                    onComplete(this, nullptr);
+            if (catgirl.find("Server Error") != std::string::npos) {
+                this->_currentError = "-7";
+                onComplete(this, nullptr);
 
-                    return;
-                }
+                delete network;
 
-                for (int i = 0; i < levels; i++) {
-                    nlohmann::json leveljson = records[i];
-                    GJGameLevel *level = GJGameLevel::create();
+                return;
+            }
+
+            nlohmann::json data = nlohmann::json::parse(catgirl);
+
+            if (!data.contains("records")) {
+                this->_currentError = "-8";
+                onComplete(this, nullptr);
+
+                delete network;
+
+                return;
+            }
+
+            nlohmann::json records = data.at("records");
+            if (!records.is_array()) {
+                this->_currentError = "-9";
+                onComplete(this, nullptr);
+                
+                delete network;
+
+                return;
+            }
+
+            int levels = records.size();
+
+            if (levels == 0) {
+                this->_currentError = "-10";
+                onComplete(this, nullptr);
+
+                delete network;
+
+                return;
+            }
+
+            for (int i = 0; i < levels; i++) {
+                nlohmann::json leveljson = records[i];
+                GJGameLevel *level = GJGameLevel::create();
 
 #define PARSE_STRING(lvalue, rvalue) if (!rvalue.is_null()) lvalue = rvalue.get<std::string>().c_str()
 #define PARSE_INT(lvalue, rvalue) if (!rvalue.is_null()) lvalue = rvalue.get<int>()
 #define PARSE_BOOL(lvalue, rvalue) if (!rvalue.is_null()) lvalue = (int)(rvalue.get<bool>())
 
-                    PARSE_STRING(level->m_levelName, data["cache_level_name"]);
-                    PARSE_STRING(level->m_levelDesc, leveljson["level_description"]);
-                    PARSE_STRING(level->m_uploadDate, leveljson["real_date"]);
-                    PARSE_STRING(level->m_creatorName, data["cache_username"]);
-                    PARSE_STRING(level->m_songIDs, data["song_ids"]);
-                    PARSE_STRING(level->m_sfxIDs, data["sfx_ids"]);
-                    PARSE_INT(level->m_audioTrack, leveljson["official_song"]);
-                    PARSE_INT(level->m_gameVersion, leveljson["game_version"]);
-                    PARSE_INT(level->m_ratings, leveljson["rating"]);
-                    PARSE_INT(level->m_ratingsSum, leveljson["rating_sum"]);
-                    PARSE_INT(level->m_downloads, leveljson["downloads"]);
-                    PARSE_INT(level->m_likes, leveljson["likes"]);
-                    PARSE_INT(level->m_levelLength, leveljson["length"]);
-                    PARSE_INT(level->m_userID, data["cache_user_id"]);
-                    PARSE_INT(level->m_coins, leveljson["coins"]);
-                    PARSE_INT(level->m_coinsVerified, leveljson["coins_verified"]);
-                    PARSE_INT(level->m_rateStars, leveljson["stars"]);
-                    PARSE_INT(level->m_accountID, leveljson["account_id"]);
-                    PARSE_INT(level->m_levelID, data["online_id"]);
-                    PARSE_BOOL(level->m_demon, leveljson["demon"]);
-                    PARSE_BOOL(level->m_autoLevel, leveljson["auto"]);
-                    PARSE_BOOL(level->m_isEditable, leveljson["level_string_available"]);
-                    PARSE_INT(level->m_demonDifficulty, leveljson["demon_type"]);
-                    PARSE_INT(level->m_demonVotes, leveljson["id"]);
-                    PARSE_INT(level->m_featured, leveljson["feature_score"]);
+                PARSE_STRING(level->m_levelName, data["cache_level_name"]);
+                PARSE_STRING(level->m_levelDesc, leveljson["level_description"]);
+                PARSE_STRING(level->m_uploadDate, leveljson["real_date"]);
+                PARSE_STRING(level->m_creatorName, data["cache_username"]);
+                PARSE_STRING(level->m_songIDs, data["song_ids"]);
+                PARSE_STRING(level->m_sfxIDs, data["sfx_ids"]);
+                PARSE_INT(level->m_audioTrack, leveljson["official_song"]);
+                PARSE_INT(level->m_gameVersion, leveljson["game_version"]);
+                PARSE_INT(level->m_ratings, leveljson["rating"]);
+                PARSE_INT(level->m_ratingsSum, leveljson["rating_sum"]);
+                PARSE_INT(level->m_downloads, leveljson["downloads"]);
+                PARSE_INT(level->m_likes, leveljson["likes"]);
+                PARSE_INT(level->m_levelLength, leveljson["length"]);
+                PARSE_INT(level->m_userID, data["cache_user_id"]);
+                PARSE_INT(level->m_coins, leveljson["coins"]);
+                PARSE_INT(level->m_coinsVerified, leveljson["coins_verified"]);
+                PARSE_INT(level->m_rateStars, leveljson["stars"]);
+                PARSE_INT(level->m_accountID, leveljson["account_id"]);
+                PARSE_INT(level->m_levelID, data["online_id"]);
+                PARSE_BOOL(level->m_demon, leveljson["demon"]);
+                PARSE_BOOL(level->m_autoLevel, leveljson["auto"]);
+                PARSE_BOOL(level->m_isEditable, leveljson["level_string_available"]);
+                PARSE_INT(level->m_demonDifficulty, leveljson["demon_type"]);
+                PARSE_INT(level->m_demonVotes, leveljson["id"]);
+                PARSE_INT(level->m_featured, leveljson["feature_score"]);
     
-                    if (!leveljson["song"].is_null()) {
-                        PARSE_INT(level->m_songID, leveljson["song"]["online_id"]);
-                    }
-                    PARSE_INT(level->m_isEpic, leveljson["epic"]);
+                if (!leveljson["song"].is_null()) {
+                    PARSE_INT(level->m_songID, leveljson["song"]["online_id"]);
+                }
+                PARSE_INT(level->m_isEpic, leveljson["epic"]);
 
-                    bool has_leveldata = false;
-                    PARSE_BOOL(has_leveldata, leveljson["level_string_available"]);
-                    if (has_leveldata) {
-                        level->m_dislikes = 1;
-                        level->m_likes++;
-                    } else {
-                        level->m_dislikes = 0;
-                    }
+                bool has_leveldata = false;
+                PARSE_BOOL(has_leveldata, leveljson["level_string_available"]);
+                if (has_leveldata) {
+                    level->m_dislikes = 1;
+                    level->m_likes++;
+                } else {
+                    level->m_dislikes = 0;
+                }
 
-                    this->makeLevelCopyable(level);
+                this->makeLevelCopyable(level);
 
-                    level->retain();
+                level->retain();
                     
-                    this->_serverResponseParsed.push_back(level);
-                }
+                this->_serverResponseParsed.push_back(level);
+            }
 
-                if (_params.count(LPFeatures::LimitLevelArray)) {
-                    int max = std::get<int>(_params[LPFeatures::LimitLevelArray]);
+            if (this->_params.count(LPFeatures::LimitLevelArray)) {
+                int max = std::get<int>(this->_params[LPFeatures::LimitLevelArray]);
 
-                    if (max > 0) {
-                        std::vector<GJGameLevel *> new_vec;
+                if (max > 0) {
+                    std::vector<GJGameLevel *> new_vec;
 
-                        for (int i = 0; i < max && i < _serverResponseParsed.size(); i++) {
-                            new_vec.push_back(this->_serverResponseParsed.at(i));
-                        }
-
-                        this->_serverResponseParsed = new_vec;
+                    for (int i = 0; i < max && i < _serverResponseParsed.size(); i++) {
+                        new_vec.push_back(this->_serverResponseParsed.at(i));
                     }
+
+                    this->_serverResponseParsed = new_vec;
                 }
+            }
                 
-                onComplete(this, this->_serverResponseParsed.at(0));
-            })
-            .expect([this, onComplete](std::string const& error) {
-                if (error.find("Server Error") != std::string::npos) {
-                    this->_currentError = "-7";
-                    onComplete(this, nullptr);
+            onComplete(this, this->_serverResponseParsed.at(0));
 
-                    return;
-                }
+            delete network;
 
-                this->_currentError = "-1";
-                onComplete(this, nullptr);
-            });
-    }
-
-    if (_params.count(LPFeatures::QueryLevelName)) {
+            return;
+        });
+        
+        network->send();
+    } else if (_params.count(LPFeatures::QueryLevelName)) {
         std::string a = std::get<std::string>(_params[LPFeatures::QueryLevelName]);
         int b = 0;
         int c = 0;
@@ -151,100 +175,126 @@ void GDHistoryProvider::downloadLevel(std::function<void(LevelProvider *, GJGame
             b = 100;
         }
 
-        web::AsyncWebRequest()
-            .fetch(fmt::format("{}/api/v1/search/level/advanced/?query={}&limit={}&offset={}", _baseUrl, url_encode(a), b, b * c))
-            .text()
-            .then([this, onComplete](std::string const& catgirl) {
-                nlohmann::json data = nlohmann::json::parse(catgirl);
+        network->setURL(fmt::format("{}/api/v1/search/level/advanced/?query={}&limit={}&offset={}", _baseUrl, url_encode(a), b, b * c));
+        
+        network->setErrorCallback([this, network, onComplete](GeodeNetwork *) {
+            std::string error = network->getResponse();
 
-                if (catgirl.find("Server Error") != std::string::npos) {
-                    this->_currentError = "-7";
-                    onComplete(this, nullptr);
-
-                    return;
-                }
-
-                if (!data.contains("hits")) {
-                    this->_currentError = "-8";
-                    onComplete(this, nullptr);
-
-                    return;
-                }
-
-                nlohmann::json records = data.at("hits");
-                if (!records.is_array()) {
-                    this->_currentError = "-9";
-                    onComplete(this, nullptr);
-
-                    return;
-                }
-
-                int levels = records.size();
-
-                if (levels == 0) {
-                    this->_currentError = "-10";
-                    onComplete(this, nullptr);
-
-                    return;
-                }
-
-                for (int i = 0; i < levels; i++) {
-                    nlohmann::json leveljson = records[i];
-                    GJGameLevel *level = GJGameLevel::create();
-
-                    PARSE_STRING(level->m_levelName, leveljson["cache_level_name"]);
-                    // PARSE_STRING(level->m_levelDesc, leveljson["level_description"]);
-                    PARSE_STRING(level->m_uploadDate, leveljson["cache_submitted"]);
-                    PARSE_STRING(level->m_creatorName, leveljson["cache_username"]);
-                    // PARSE_INT(level->m_audioTrack, leveljson["official_song"]);
-                    level->m_gameVersion = 22;
-                    PARSE_INT(level->m_ratings, leveljson["cache_rating"]);
-                    PARSE_INT(level->m_ratingsSum, leveljson["cache_rating_sum"]);
-                    PARSE_BOOL(level->m_demon, leveljson["cache_demon"]);
-                    PARSE_BOOL(level->m_autoLevel, leveljson["cache_auto"]);
-                    PARSE_INT(level->m_demonDifficulty, leveljson["cache_demon_type"]);
-                    PARSE_INT(level->m_downloads, leveljson["cache_downloads"]);
-                    // PARSE_INT(level->m_difficulty, leveljson["cache_main_difficulty"]);
-                    PARSE_INT(level->m_likes, leveljson["cache_likes"]);
-                    PARSE_INT(level->m_levelLength, leveljson["cache_length"]);
-                    PARSE_INT(level->m_userID, data["cache_user_id"]);
-                    PARSE_INT(level->m_rateStars, leveljson["cache_stars"]);
-                    PARSE_INT(level->m_levelID, leveljson["online_id"]);
-                    PARSE_INT(level->m_demonVotes, leveljson["id"]);
-                    PARSE_INT(level->m_featured, leveljson["cache_featured"]);
-                    PARSE_INT(level->m_isEpic, leveljson["cache_epic"]);
-
-                    bool has_leveldata = false;
-                    PARSE_BOOL(has_leveldata, leveljson["cache_level_string_available"]);
-                    if (has_leveldata) {
-                        log::info("(GDHistoryProvider) level {} by {} has leveldata", level->m_levelName, level->m_creatorName);
-                        level->m_dislikes = 1;
-                        level->m_likes++;
-                    } else {
-                        log::info("(GDHistoryProvider) level {} by {} does not has leveldata", level->m_levelName, level->m_creatorName);
-                        level->m_dislikes = 0;
-                    }
-
-                    this->makeLevelCopyable(level);
-
-                    level->retain();
-                    
-                    this->_serverResponseParsed.push_back(level);
-                }
-                
-                onComplete(this, this->_serverResponseParsed.at(0));
-            })
-            .expect([this, onComplete](std::string const& error) {
-                if (error.find("Server Error") != std::string::npos) {
-                    this->_currentError = "-7";
-                    onComplete(this, nullptr);
-
-                    return;
-                }
-
-                this->_currentError = "-1";
+            if (error.find("Server Error") != std::string::npos) {
+                this->_currentError = "-7";
                 onComplete(this, nullptr);
-            });
+
+                delete network;
+
+                return;
+            }
+
+            this->_currentError = "-1";
+            onComplete(this, nullptr);
+
+            delete network;
+
+            return;
+        });
+
+        network->setOkCallback([this, network, onComplete](GeodeNetwork *) {
+            std::string catgirl = network->getResponse();
+
+            if (catgirl.find("Server Error") != std::string::npos) {
+                this->_currentError = "-7";
+                onComplete(this, nullptr);
+
+                delete network;
+
+                return;
+            }
+
+            nlohmann::json data = nlohmann::json::parse(catgirl);
+
+            if (!data.contains("hits")) {
+                this->_currentError = "-8";
+                onComplete(this, nullptr);
+
+                delete network;
+
+                return;
+            }
+
+            nlohmann::json records = data.at("hits");
+            if (!records.is_array()) {
+                this->_currentError = "-9";
+                onComplete(this, nullptr);
+
+                delete network;
+
+                return;
+            }
+
+            int levels = records.size();
+
+            if (levels == 0) {
+                this->_currentError = "-10";
+                onComplete(this, nullptr);
+
+                delete network;
+
+                return;
+            }
+
+            for (int i = 0; i < levels; i++) {
+                nlohmann::json leveljson = records[i];
+                GJGameLevel *level = GJGameLevel::create();
+
+                PARSE_STRING(level->m_levelName, leveljson["cache_level_name"]);
+                // PARSE_STRING(level->m_levelDesc, leveljson["level_description"]);
+                PARSE_STRING(level->m_uploadDate, leveljson["cache_submitted"]);
+                PARSE_STRING(level->m_creatorName, leveljson["cache_username"]);
+                // PARSE_INT(level->m_audioTrack, leveljson["official_song"]);
+                level->m_gameVersion = 22;
+                PARSE_INT(level->m_ratings, leveljson["cache_rating"]);
+                PARSE_INT(level->m_ratingsSum, leveljson["cache_rating_sum"]);
+                PARSE_BOOL(level->m_demon, leveljson["cache_demon"]);
+                PARSE_BOOL(level->m_autoLevel, leveljson["cache_auto"]);
+                PARSE_INT(level->m_demonDifficulty, leveljson["cache_demon_type"]);
+                PARSE_INT(level->m_downloads, leveljson["cache_downloads"]);
+                // PARSE_INT(level->m_difficulty, leveljson["cache_main_difficulty"]);
+                PARSE_INT(level->m_likes, leveljson["cache_likes"]);
+                PARSE_INT(level->m_levelLength, leveljson["cache_length"]);
+                PARSE_INT(level->m_userID, data["cache_user_id"]);
+                PARSE_INT(level->m_rateStars, leveljson["cache_stars"]);
+                PARSE_INT(level->m_levelID, leveljson["online_id"]);
+                PARSE_INT(level->m_demonVotes, leveljson["id"]);
+                PARSE_INT(level->m_featured, leveljson["cache_featured"]);
+                PARSE_INT(level->m_isEpic, leveljson["cache_epic"]);
+
+                bool has_leveldata = false;
+                PARSE_BOOL(has_leveldata, leveljson["cache_level_string_available"]);
+                if (has_leveldata) {
+                    log::info("(GDHistoryProvider) level {} by {} has leveldata", level->m_levelName, level->m_creatorName);
+                    level->m_dislikes = 1;
+                    level->m_likes++;
+                } else {
+                    log::info("(GDHistoryProvider) level {} by {} does not has leveldata", level->m_levelName, level->m_creatorName);
+                    level->m_dislikes = 0;
+                }
+
+                this->makeLevelCopyable(level);
+
+                level->retain();
+                    
+                this->_serverResponseParsed.push_back(level);
+            }
+                
+            onComplete(this, this->_serverResponseParsed.at(0));
+
+            delete network;
+
+            return;
+        });
+        
+        network->send();
+    } else {
+        delete network;
     }
 
     _params.clear();
@@ -368,15 +418,28 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
 
     log::info("(GDHistoryProvider) downloading level {}", id);
 
-    web::AsyncWebRequest()
-    .fetch(fmt::format("{}/level/{}/{}/download", _baseUrl, id, recid))
-    .text()
-    .then([this, onComplete](std::string const& catgirl) {
+    GeodeNetwork *network = new GeodeNetwork();
+
+    network->setURL(fmt::format("{}/level/{}/{}/download", _baseUrl, id, recid));
+
+    network->setErrorCallback([this, onComplete, network](GeodeNetwork *) {
+        struct LevelProvider::BasicLevelInformation info = {};
+
+        onComplete(this, "-1", info);
+
+        delete network;
+    });
+
+    network->setOkCallback([this, onComplete, network](GeodeNetwork *) {
         struct LevelProvider::BasicLevelInformation info;
+
+        std::string catgirl = network->getResponse();
 
         if (catgirl.find("Server Error") != std::string::npos) {
             this->_currentError = "-7";
             onComplete(this, "-7", info);
+
+            delete network;
 
             return;
         }
@@ -385,11 +448,15 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
             this->_currentError = "-5";
             onComplete(this, "-5", info);
 
+            delete network;
+
             return;
         }
         if (catgirl.find("You do not have the rights to download this record") != std::string::npos) {
             this->_currentError = "-6";
             onComplete(this, "-6", info);
+            
+            delete network;
             
             return;
         }
@@ -417,6 +484,8 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
     
             onComplete(this, "-2", info);
 
+            delete network;
+
             return;
         }
 
@@ -435,12 +504,11 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
         level->release();
 
         onComplete(this, str, info);
-    })
-    .expect([this, onComplete](std::string const& error) {
-        struct LevelProvider::BasicLevelInformation info;
 
-        onComplete(this, "-1", info);
+        delete network;
     });
+
+    network->send();
 
     _params.clear();
 }
@@ -458,7 +526,7 @@ std::string GDHistoryProvider::getErrorCodeDescription(std::string err) {
         {"-7", "gd history's api is down."},
         {"-8", "api did not return record data."},
         {"-9", "api returned record data with invalid data type."},
-        {"-10", "api returned record array with zero levels in it."}
+        {"-10", "api returned an record array with zero levels in it."}
     };
 
     if (errors.count(err)) {
@@ -466,4 +534,8 @@ std::string GDHistoryProvider::getErrorCodeDescription(std::string err) {
     }
 
     return res;
+}
+
+std::string GDHistoryProvider::getDescription() {
+    return std::string("A Geometry Dash preservation project. ") + _baseUrl;
 }

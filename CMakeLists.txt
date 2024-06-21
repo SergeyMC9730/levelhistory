@@ -11,7 +11,7 @@ add_library(${PROJECT_NAME} SHARED
     src/main.cpp src/GDHistoryProvider.cpp
     src/ProviderPopup.cpp src/LevelProvider.cpp
     src/LoadingCircleLayer.cpp src/ProviderPopupWait.cpp
-    # Add your cpp files here
+    src/GeodeNetwork.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE json4workflows/single_include)

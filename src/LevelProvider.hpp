@@ -49,4 +49,6 @@ public:
 
     virtual std::string getErrorCodeDescription(std::string err) = 0;
     virtual std::string getErrorCode();
+
+    virtual std::string getDescription();
 };
