@@ -41,6 +41,8 @@ public:
     void setupSettingsPage(CCLayer *providerBox);
     void setupGenericSearchPage(CCLayer *providerBox);
 
+    static void setColorToButtonSprite(ButtonSprite *spr, cocos2d::_ccColor3B color);
+
     bool _locked = false;
 public:
     static ProviderPopup *get();
@@ -90,6 +92,8 @@ public:
     void removeLevelRatings();
 
     void scenePrintError(float delta);
+
+    void onProviderInfoBtn(CCObject *sender);
     // static void setButtonSpriteColor(ButtonSprite)
     // bool ccTouchBegan(cocos2d::CCTouch *touch, cocos2d::CCEvent *event) override;
 };

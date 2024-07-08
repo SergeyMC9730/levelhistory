@@ -24,4 +24,7 @@ public:
     virtual std::string getErrorCodeDescription(std::string err) override;
 
     std::string getDescription() override;
+
+    void parseResult(std::string &result, std::function<void(LevelProvider *, GJGameLevel *)> onComplete, GeodeNetwork *network = nullptr) override;
+    void parseResult(std::string &result, std::function<void(LevelProvider *, std::string, struct LevelProvider::BasicLevelInformation)> onComplete, GeodeNetwork *network = nullptr);
 };

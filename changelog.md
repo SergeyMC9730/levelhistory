@@ -1,3 +1,14 @@
+# v1.1.0
+## GDHistory Provider
+- All requests are now cached
+  - This feature would decrease loading time in some cases and would make GDHistory's server load a bit lower.
+## UI
+- Added info button for all level providers
+- Fixed a bug when 'Go to Level' button wasn't able to gray out *(reported by Reapavon)*
+- URL for a level provider now can be changed on runtime
+## Technical Changes
+- Geode version has been switched to `3.2.0`
+
 # v1.0.4
 ## GDHistory Provider
 - Networking has been redone

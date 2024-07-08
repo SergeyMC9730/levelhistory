@@ -57,6 +57,21 @@ bool ProviderPopup::init(std::vector<std::shared_ptr<LevelProvider>> providers) 
 		exitBtn, this, menu_selector(ProviderPopup::onExitButton)
 	);
 
+    auto infoBtn = CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png");
+	auto btn4 = CCMenuItemSpriteExtra::create(
+		infoBtn, this, menu_selector(ProviderPopup::onProviderInfoBtn)
+	);
+
+	CCMenu *men3 = CCMenu::create();
+
+	float padding = 20.f;
+    
+	men3->setPosition({
+		winsize.width / 2 + spr1->getContentSize().width / 2 - padding,
+		winsize.height / 2 + spr1->getContentSize().height / 2 - padding
+	});
+	men3->addChild(btn4);
+
     CCMenu *menu = CCMenu::create();
 
     CCLayer *infoLayer = CCLayer::create();
@@ -136,6 +151,7 @@ bool ProviderPopup::init(std::vector<std::shared_ptr<LevelProvider>> providers) 
     men2->addChild(btn3);
 
     objectSelector->addChild(men2, 2);
+    objectSelector->addChild(men3, 2);
 
     m_mainLayer->addChild(objectSelector);
 
@@ -593,6 +609,7 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
 
     int id = std::stoi(si->_input->getString());
 
+    si->_info->provider->cleanupParameters();
     si->_info->provider->setParameter(LevelProvider::QueryID, id);
     si->_info->provider->setParameter(LevelProvider::LimitLevelArray, levels_limit);
 
@@ -625,7 +642,7 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
 
 LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
     auto csz = page->getContentSize();
-    log::info("1");
+    // log::info("1");
 
     // LevelCell *cell = LevelCell::create(0.f, 0.f);
     // log::info("2");
@@ -634,13 +651,13 @@ LevelCell *ProviderPopup::createLevelCell(GJGameLevel *level, CCLayer *page) {
     // cell->setPosition(0, csz.height / 2);
     // log::info("4");
     LevelCell *cell = new LevelCell("a", 0.f, 0.f);
-    log::info("2");
+    // log::info("2");
     if (!cell->init()) return nullptr;
-    log::info("3");
+    // log::info("3");
     cell->autorelease();
-    log::info("4");
+    // log::info("4");
     cell->loadFromLevel(level);
-    log::info("5");
+    // log::info("5");
     cell->setPosition(0, csz.height / 2);
 
     CCLayer *base = typeinfo_cast<CCLayer *>(cell->getChildByID("main-layer"));
@@ -747,19 +764,27 @@ void ProviderPopup::onLevelPage(CCObject *sender) {
     for (auto cell : popup->_levelPage._cells) {
         cell->setVisible(false);
     }
+    
+    log::info("C: {}", level->m_dislikes);
 
     if (level->m_dislikes == 0) {
+        log::info("A");
+
         auto spr = typeinfo_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
         auto btn = typeinfo_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
 
         btn->setEnabled(false);
-        spr->setColor({64, 64, 64});
+        // spr->setColor({64, 64, 64});
+        setColorToButtonSprite(spr, {64, 64, 64});
     } else {
+        log::info("B");
+
         auto spr = typeinfo_cast<ButtonSprite *>(getChildByIDRecursive("play-level-spr"));
         auto btn = typeinfo_cast<CCMenuItemSpriteExtra *>(getChildByIDRecursive("play-level-btn"));
 
         btn->setEnabled(true);
-        spr->setColor({255, 255, 255});
+        // spr->setColor({255, 255, 255});
+        setColorToButtonSprite(spr, {255, 255, 255});
     }
     
     // int id = level->m_levelID.value();
@@ -885,6 +910,8 @@ void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
     ProviderPopupInfo *info = (ProviderPopupInfo *)providerBox->getUserData();
 
     auto *layout = RowLayout::create();
+    layout->setGrowCrossAxis(true);
+
     CCLayer *settings = CCLayer::create();
     auto csz = page->getContentSize();
 
@@ -901,16 +928,6 @@ void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
 
     // feats[LevelProvider::LPFeatures::LimitLevelArray] || feats[LevelProvider::LPFeatures::SetLevelArrayPage]
     if (feats[LevelProvider::LPFeatures::LimitLevelArray]) {
-        // m_pFollowPlayer = CCMenuItemToggler::create(checkOff, checkOn, this, menu_selector(ProviderPopup::onToggler1PressMaybe));
-		// CCLabelBMFont *men1_info = CCLabelBMFont::create("Follow Player", "bigFont.fnt");
-		// men1_info->setAnchorPoint({0.5f, 0.5f});
-		// men1_info->setScale(0.5f);
-		// men1_info->setPositionX(100.f);
-        // std::string _final = "Set level array size...";
-        // if (!this->_levelArraySize.empty()) {
-        //     _final = this->_levelArraySize;
-        // }
-
         TextInput *in = TextInput::create(100, "Set level array size...", "chatFont.fnt");
         in->setID("level-array-input");
 
@@ -941,7 +958,22 @@ void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
         settings->updateLayout();
     }
 
-    settings->setPosition(csz.width / 2, (csz.height - settings->getContentSize().height) / 2 + 15);
+    {
+        TextInput *in = TextInput::create(128, "Set instance URL...", "chatFont.fnt");
+        in->setID("instance-url-input");
+
+        if (!ProviderPopup::get()->_selectedProvider->getBaseURL().empty()) {
+            in->setString(ProviderPopup::get()->_selectedProvider->getBaseURL(), false);
+        }
+        in->setCallback([this](const std::string &value) {
+            ProviderPopup::get()->_selectedProvider->setBaseURL(value);
+        });
+
+        settings->addChild(in);
+        settings->updateLayout();
+    }
+
+    settings->setPosition(csz.width / 2, (csz.height - settings->getContentSize().height) / 2 + 30);
 }
 
 ProviderPopup *ProviderPopup::get() {
@@ -1251,6 +1283,7 @@ void ProviderPopup::onGenericSearch(CCObject *sender) {
         lp = std::stoi(levelPageStr);
     }
 
+    si->_info->provider->cleanupParameters();
     si->_info->provider->setParameter(LevelProvider::QueryLevelName, si->_input->getString());
     si->_info->provider->setParameter(LevelProvider::LimitLevelArray, levels_limit);
     si->_info->provider->setParameter(LevelProvider::SetLevelArrayPage, lp);
@@ -1317,6 +1350,7 @@ void ProviderPopup::onPlayLevelDownload(CCObject *sender) {
 
     auto level = popup->_levelPage._currentLevels[popup->_levelPage._currentLevelsIndex];
 
+    popup->_selectedProvider->cleanupParameters();
     popup->_selectedProvider->setParameter(LevelProvider::SpecificRecord, level->m_demonVotes);
 
     popup->_selectedProvider->getLevelData(level->m_levelID.value(), [popup, level, wait] (LevelProvider *prov, std::string data, struct LevelProvider::BasicLevelInformation info) {
@@ -1468,3 +1502,42 @@ void ProviderPopup::scenePrintError(float delta) {
 }
 
 std::string ProviderPopup::_currentError = "";
+
+void ProviderPopup::setColorToButtonSprite(ButtonSprite *spr, _ccColor3B color) {
+    auto rgba = typeinfo_cast<CCRGBAProtocol *>(spr);
+
+    if (rgba != nullptr) {
+        spr->runAction(CCTintTo::create(0.25, color.r, color.g, color.b));
+    }
+
+    CCArray *nodeChildren = spr->getChildren();
+
+    if (nodeChildren == nullptr) return;
+    
+    for (int i = 0; i < nodeChildren->count(); i++) {
+        CCObject *child_obj = nodeChildren->objectAtIndex(i);
+        if (child_obj == nullptr) continue;
+
+        CCRGBAProtocol *child_rgba = typeinfo_cast<CCRGBAProtocol *>(child_obj);  
+        if (child_rgba == nullptr) continue;
+
+        CCNode *child_node = typeinfo_cast<CCNode *>(child_obj);
+
+        child_node->runAction(CCTintTo::create(0.1f, color.r, color.g, color.b));
+    }
+}
+
+void ProviderPopup::onProviderInfoBtn(CCObject *sender) {
+    auto popup = ProviderPopup::get();
+
+    if (popup->_selectedProvider == nullptr) {
+        FLAlertLayer::create("Level History", "Click on any <cg>available provider</c> and <cy>try again</c>.", "OK")->show();
+
+        return;
+    }
+
+    std::string description = popup->_selectedProvider->getDescription();
+    std::string name = popup->_selectedProvider->getName();
+
+    FLAlertLayer::create(name.c_str(), description, "OK")->show();
+}

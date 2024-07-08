@@ -54,3 +54,64 @@ void LevelProvider::makeLevelCopyable(GJGameLevel *level) {
 std::string LevelProvider::getDescription() {
     return "(No description provided)";
 }
+
+#include <ctime>
+
+bool LevelProvider::requestCached() {
+    return getCacheID() != -1;
+}
+
+int LevelProvider::getCacheID() {
+    uint64_t timestamp = time(0);
+
+    int i = 0;
+
+    for (struct Cached &data : _cachedResults) {
+        if (_params == data._params && (timestamp - data._timestamp) < getTimestampMaxDiff()) {
+            return i;
+        }
+
+        i++;
+    }
+
+    return -1;
+}
+
+bool LevelProvider::requestCached(std::string &result) {
+    struct Cached toCheck = {_params, result, 0};
+
+    for (const struct Cached &data : _cachedResults) {
+        if (toCheck == data) return true;
+    }
+
+    return false;
+}
+
+unsigned int LevelProvider::getTimestampMaxDiff() {
+    return 3 * 60;
+}
+
+std::string LevelProvider::encodeParams() {
+    std::string result = "";
+
+    for (auto [key, val] : _params) {
+        result += std::to_string((int)key) + "_";
+    }
+
+    if (result.length() >= 1) {
+        result.pop_back();
+    }
+
+    return result;
+}
+
+void LevelProvider::cleanupParameters() {
+    _params.clear();
+}
+
+std::string LevelProvider::getBaseURL() {
+    return _baseUrl;
+}
+void LevelProvider::setBaseURL(std::string url) {
+    _baseUrl = url;
+}
