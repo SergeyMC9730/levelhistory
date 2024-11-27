@@ -1502,7 +1502,7 @@ void ProviderPopup::removeThumbnailForCell(LevelCell *cell) {
             continue;
         }
 
-        auto as_clip = typeinfo_cast<CCClippingNode *>(obj);
+        auto as_clip = typeinfo_cast<CCNode *>(obj);
         if (as_clip != nullptr) {
             as_clip->setPosition({1000.f, 1000.f});
                 
