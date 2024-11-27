@@ -44,6 +44,7 @@ public:
     static void setColorToButtonSprite(ButtonSprite *spr, cocos2d::_ccColor3B color);
 
     bool _locked = false;
+    bool _viewDeletedLevels = false;
 public:
     static ProviderPopup *get();
 
@@ -64,6 +65,8 @@ public:
 
     void onToggler1PressMaybe(cocos2d::CCObject *sender);
     void onExitButton(CCObject *sender);
+
+    void onViewDeletedLevels(CCObject* sender);
 
     void update(float delta) override;
 

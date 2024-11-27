@@ -228,14 +228,20 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
             auto levels = this->askMultipleLevels();
 
             for (auto lvl : levels) {
-                if (lvl->m_isEditable) {
+                log::info("{}", lvl->m_dislikes);
+
+                if (lvl->m_dislikes >= 1) {
                     propLevel = lvl;
+
+                    // log::info("BREAKING");
                     
                     break;
                 }
             }
 
             if (!propLevel) {
+                // log::info("propLevel is nullptr");
+
                 this->cleanupLevels(true);
                 this->_serverResponseParsed = old_vec;
 
@@ -245,9 +251,8 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
                 return;
             }
 
+            // log::info("votes: {}", propLevel->m_demonVotes);
             if (propLevel->m_demonVotes <= 0) {
-                // log::info("votes: {}", propLevel->m_demonVotes);
-
                 this->cleanupLevels(true);
                 this->_serverResponseParsed = old_vec;
 
@@ -256,6 +261,8 @@ void GDHistoryProvider::getLevelData(int id, std::function<void(LevelProvider *,
 
                 return;
             }
+
+            log::info("(GDHistoryProvider) record for {} is {}", id, propLevel->m_demonVotes);
 
             this->setParameter(LPFeatures::SpecificRecord, propLevel->m_demonVotes);
 

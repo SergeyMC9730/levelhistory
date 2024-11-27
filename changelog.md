@@ -1,3 +1,12 @@
+# v1.1.1
+## GDHistory Provider
+- Fixed level download issue
+## UI
+- Fixed a typo
+## Technical Changes
+- Geode version has been switched to `4.0.1`
+- Added mod tags
+
 # v1.1.0
 ## GDHistory Provider
 - All requests are now cached

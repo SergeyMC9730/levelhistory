@@ -826,7 +826,7 @@ void ProviderPopup::lambdaOnDownloadLevel(SearchInstance *si, LoadingCircleLayer
         existingCircle->m_pCircle->setOpacity(0);
     
         if (level == nullptr) {
-            auto error = fmt::format("<cr>No levels cannot be found: </c><cy>{}</c>", prov->getErrorCodeDescription(prov->getErrorCode()));
+            auto error = fmt::format("<cr>No levels can be found: </c><cy>{}</c>", prov->getErrorCodeDescription(prov->getErrorCode()));
             FLAlertLayer::create("Error", error, "OK")->show();
             return;
         }
@@ -973,7 +973,23 @@ void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
         settings->updateLayout();
     }
 
+    CCMenu* btnMenu = CCMenu::create();
+
+    btnMenu->setContentSize(csz);
+    btnMenu->setPosition(0, 0);
+
+    page->addChild(btnMenu);
+
+    {
+        CCMenuItemToggler* toggler = GameToolbox::createToggleButton("View Deleted Levels", menu_selector(ProviderPopup::onViewDeletedLevels), ProviderPopup::get()->_viewDeletedLevels, btnMenu, { 0, 0 }, btnMenu, btnMenu, 0.6f, 0.6f, 50.f, { 5, 0 }, "bigFont.fnt", false, 1, nullptr);
+        
+    }
+
     settings->setPosition(csz.width / 2, (csz.height - settings->getContentSize().height) / 2 + 30);
+}
+
+void ProviderPopup::onViewDeletedLevels(CCObject* sender) {
+
 }
 
 ProviderPopup *ProviderPopup::get() {

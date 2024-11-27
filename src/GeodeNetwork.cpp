@@ -1,4 +1,5 @@
 #include "GeodeNetwork.hpp"
+using namespace geode::prelude;
 
 void GeodeNetwork::setOkCallback(std::function<void(GeodeNetwork *)> ok) {
     _onOk = ok;
@@ -40,6 +41,8 @@ void GeodeNetwork::setupListener() {
     _listener.bind([this] (geode::utils::web::WebTask::Event* e) {
         if (geode::utils::web::WebResponse* res = e->getValue()) {
             this->_data = res->string().unwrapOr("Not a string");
+
+            // log::info("_data = {}", this->_data);
 
             if (res->ok() && this->_onOk != nullptr) {
                 this->_onOk(this); 
