@@ -972,6 +972,8 @@ void ProviderPopup::setupSettingsPage(CCLayer *providerBox) {
         settings->addChild(in);
         settings->updateLayout();
     }
+	
+	return;
 
     CCMenu* btnMenu = CCMenu::create();
 

@@ -2,7 +2,8 @@
 	"geode": "4.0.1",
 	"gd": {
         "android": "2.2074",
-        "win": "2.2074"
+        "win": "2.2074",
+		"mac": "2.2074"
     },
 	"version": "v1.1.1",
 	"id": "dogotrigger.level_history",
