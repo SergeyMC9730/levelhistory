@@ -583,7 +583,7 @@ void ProviderPopup::onLevelIDSearch(CCObject *sender) {
     
     }
 
-    bool d = si->_input->getString().find_first_not_of("0123456789") == std::string::npos;
+    bool d = std::string(si->_input->getString()).find_first_not_of("0123456789");
 
     if (!d) {
         FLAlertLayer::create("Error", "<cr>Level ID input should contain numbers only!</c>", "OK")->show();
